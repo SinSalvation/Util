@@ -42,10 +42,8 @@ public class SensitiveUtil {
             content = format(content);
             char[] chars = content.toCharArray();
             if (chars.length <= 6 && chars.length >= 1) {
-                int n;
                 List<MaskWord> tempList = maskWords;
                 for(char c : chars){
-                    n = 0;
                     maskWord = new MaskWord();
                     maskWord.setValue(c);
                     maskWord.setList(new ArrayList<MaskWord>());
@@ -57,13 +55,12 @@ public class SensitiveUtil {
                     } else {
                         for (int i = 0; i < tempList.size() - 1; i++) {
                             if (c > tempList.get(i).getValue() && c < tempList.get(i + 1).getValue()) {
-                                n = i + 1;
                                 tempList.add(i + 1, maskWord);
                                 break;
                             }
                         }
                     }
-                    tempList = tempList.get(n).getList();
+                    tempList = maskWord.getList();
                 }
             }
         }
