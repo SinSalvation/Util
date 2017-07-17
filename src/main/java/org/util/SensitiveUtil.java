@@ -2,17 +2,24 @@ package org.util;
 
 import java.io.*;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
- * Created by jixu_m on 2017/7/13.
+ * Created by jixu_m on 2017/7/6.
  */
 public class SensitiveUtil {
-    static String regEx = "[\u4e00-\u9fa5]";
-    static Pattern pat = Pattern.compile(regEx);
-    static List<Character> list = new ArrayList<>();
-    static Map<Character, Object> map = new HashMap<>();
+    static char startChinese = "\u4e00".charAt(0);
+    static char endChinese = "\u9fcb".charAt(0);
+    static char startBigEnglish = "\u0041".charAt(0);
+    static char endBigEnglish = "\u005a".charAt(0);
+    static char startSmallEnglish = "\u0061".charAt(0);
+    static char endSmallEnglish = "\u007a".charAt(0);
+    static List<MaskWord> maskWords = new ArrayList<>();
+    static List<MaskWord> list1 = new ArrayList<>();
+    static List<MaskWord> list2 = new ArrayList<>();
+    static List<MaskWord> list3 = new ArrayList<>();
+    static List<MaskWord> list4 = new ArrayList<>();
+    static List<MaskWord> list5 = new ArrayList<>();
+    static List<MaskWord> list6 = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
         long startTime = System.nanoTime();
@@ -22,8 +29,7 @@ public class SensitiveUtil {
         String temp;
         while(!(temp = scanner.nextLine()).equals(-1)){
             startTime = System.nanoTime();
-            System.out.println("查询结果：" + isMaskWord(temp));
-            System.out.println("查询时间：" + (System.nanoTime() - startTime));
+            System.out.println("查询结果：" + isMaskWord(temp) + "\n查询时间：" + (System.nanoTime() - startTime));
         }
     }
 
@@ -31,50 +37,48 @@ public class SensitiveUtil {
         File file = new File(filename);
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
         String content;
-        char a = '0';
+        MaskWord maskWord;
         while ((content = bufferedReader.readLine()) != null) {
             content = format(content);
             char[] chars = content.toCharArray();
             if (chars.length <= 6 && chars.length >= 1) {
-                int i = 0;
-                Map<Character, Object> temp = map;
-                for (char c : chars) {
-                    a = c;
-                    if (temp.containsKey(c)) {
-                        temp = (Map<Character, Object>) temp.get(c);
-                    } else {
-                        temp.put(c, new HashMap<Character, Object>());
+                int n = 0;
+                List<MaskWord> tempList = maskWords;
+                for(char c : chars){
+                    maskWord = new MaskWord();
+                    maskWord.setValue(c);
+                    maskWord.setList(new ArrayList<MaskWord>());
+                    if(chars.length == 1){
+                        list1.add(maskWord);
                     }
-                    i++;
-                }
-                if (i == 1) {
-                    if (list.size() == 0 || list.get(list.size() - 1) < a) {
-                        list.add(a);
+                    if (find(c,tempList) == null) {
+                        tempList.add(maskWord);
                     } else {
-                        for (int n = 0; n < list.size() - 1; n++) {
-                            if (a > list.get(n) && a < list.get(n + 1)) {
-                                list.add(n + 1, a);
+                        for (int i = 0; i < tempList.size() - 1; i++) {
+                            if (c > tempList.get(i).getValue() && c < tempList.get(i + 1).getValue()) {
+                                n = i + 1;
+                                tempList.add(i + 1, maskWord);
                                 break;
                             }
                         }
                     }
+                    tempList = tempList.get(n).getList();
                 }
             }
         }
     }
 
-    public static boolean isChinese(char c) {
-        Matcher matcher = pat.matcher(String.valueOf(c));
-        boolean flg = false;
-        if (matcher.find())
-            flg = true;
-        return flg;
+    public static boolean isChineseOrEnglish(char c) {
+        if((c>=startChinese && c<=endChinese)){
+            return true;
+        }
+        return false;
     }
 
     public static String format(String s) {
         String temp = "";
         for (char c : s.toCharArray()) {
-            if (isChinese(c)) {
+            if (isChineseOrEnglish(c)) {
                 temp += c;
             }
         }
@@ -84,50 +88,88 @@ public class SensitiveUtil {
     public static boolean isMaskWord(String s) {
         s = format(s);
         char[] chars = s.toCharArray();
-        if (chars.length > 6 || chars.length < 1) {
+        if (chars.length > 6|| chars.length < 1) {
             return true;
         }
         for (char c : chars) {
-            if (isChinese(c)) {
-                int min = 0;
-                int max = list.size();
-                while (min < list.size() - 1) {
-                    int now = (max + min) / 2;
-                    if (c == list.get(now)) {
-                        return true;
-                    } else if (c < list.get(now)) {
-                        max = now;
-                    } else if (c > list.get(now)) {
-                        min = now;
-                    }
-                    if (max == min && c == list.get(max)) {
-                        return true;
-                    }
-                    if (max == 0 || max - min == 1) {
-                        break;
-                    }
-                }
+            if(find(c,list1)!=null){
+                return true;
             }
         }
         if (chars.length > 1) {
-            Map<Character, Object> temp = map;
+            List<MaskWord> tempList = maskWords;
             int i = 0;
-            for (int n=0;n<chars.length;) {
-                if (i < 2) {
-                    if (temp.containsKey(chars[n])) {
-                        temp = (Map<Character, Object>) temp.get(chars[n]);
-                        i++;
-                        n++;
-                    } else {
-                        i = 0;
-                        temp = map;
-                        continue;
+            for (int n = 0; n < chars.length; n++) {
+                MaskWord maskWord = find(chars[n],tempList);
+                if (maskWord != null) {
+                    tempList = maskWord.getList();
+                    i++;
+                    if(i > 0 && tempList.size() == 0){
+                        return true;
                     }
                 } else {
-                    return true;
+                    if (i > 0) {
+                        n--;
+                    }
+                    i = 0;
+                    tempList = maskWords;
+                    continue;
                 }
             }
         }
         return false;
+    }
+
+    public static MaskWord find(char c,List<MaskWord> tempList){
+        int min = 0;
+        int max = tempList.size();
+        if(max != 0){
+            if(tempList.get(0).getValue() == c){
+                return tempList.get(0);
+            }
+        }
+        while (min < tempList.size() - 1) {
+            int now = (max + min) / 2;
+            if (c == tempList.get(now).getValue()) {
+                return tempList.get(now);
+            } else if (c < tempList.get(now).getValue()) {
+                max = now;
+            } else if (c > tempList.get(now).getValue()) {
+                min = now;
+            }
+            if (max == min && c == tempList.get(max).getValue()) {
+                return tempList.get(now);
+            }
+            if (max == 0 || max - min == 1) {
+                break;
+            }
+        }
+        return null;
+    }
+
+    public static List<MaskWord> findList(int i){
+        switch (i){
+            case 1 :{
+                return list1;
+            }
+            case 2 :{
+                return list2;
+            }
+            case 3 :{
+                return list3;
+            }
+            case 4 :{
+                return list4;
+            }
+            case 5 :{
+                return list5;
+            }
+            case 6 :{
+                return list6;
+            }
+            default:{
+                return maskWords;
+            }
+        }
     }
 }
