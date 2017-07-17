@@ -42,9 +42,10 @@ public class SensitiveUtil {
             content = format(content);
             char[] chars = content.toCharArray();
             if (chars.length <= 6 && chars.length >= 1) {
-                int n = 0;
+                int n;
                 List<MaskWord> tempList = maskWords;
                 for(char c : chars){
+                    n = 0;
                     maskWord = new MaskWord();
                     maskWord.setValue(c);
                     maskWord.setList(new ArrayList<MaskWord>());
