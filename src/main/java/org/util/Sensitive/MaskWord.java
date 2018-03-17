@@ -1,4 +1,4 @@
-package org.util;
+package org.util.Sensitive;
 
 import java.util.List;
 
@@ -7,6 +7,7 @@ import java.util.List;
  */
 public class MaskWord {
     private char value;
+    private boolean stop;
     private List<MaskWord> list;
 
     public char getValue() {
@@ -15,6 +16,14 @@ public class MaskWord {
 
     public void setValue(char value) {
         this.value = value;
+    }
+
+    public boolean isStop() {
+        return stop;
+    }
+
+    public void setStop(boolean stop) {
+        this.stop = stop;
     }
 
     public List<MaskWord> getList() {
