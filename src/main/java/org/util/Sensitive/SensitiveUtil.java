@@ -44,25 +44,22 @@ public class SensitiveUtil {
                 List<MaskWord> tempList = maskWords;
                 int a = 0;
                 for(char c : chars){
-                    if(chars.length == 1){
-                        continue;
-                    }
                     a++;
                     flag = true;
                     maskWord = new MaskWord();
                     maskWord.setValue(c);
                     maskWord.setStop(false);
-                    if (a == chars.length) {
+                    if (a == chars.length) {            //判断是不是结尾
                         maskWord.setStop(true);
                     }
                     maskWord.setList(new ArrayList<MaskWord>());
                     for (MaskWord m : tempList) {
                         if (c == m.getValue()) {
                             tempList = m.getList();
-                            if (a == chars.length) {
+                            if (a == chars.length) {    //之前可能有包含字 但是不是结尾
                                 m.setStop(true);
                             }
-                            flag = false;
+                            flag = false;               //已经有相同值或结尾 不需要插入
                         }
                     }
                     if(flag) {
@@ -128,15 +125,20 @@ public class SensitiveUtil {
         }
         if (chars.length > 0) {
             List<MaskWord> tempList = maskWords;
+            int i = 0;
             for (int n = 0; n < chars.length; n++) {
                 MaskWord maskWord = find(chars[n],tempList);
-                if(maskWord == null){
-                    tempList = maskWords;
-                    continue;
-                }
-                if(maskWord.isStop()){
-                    return true;
+                if (maskWord != null) {
+                    tempList = maskWord.getList();
+                    i++;
+                    if((i > 1 && maskWord.isStop())){
+                        return true;
+                    }
                 } else {
+                    if (i > 0) {                                        //如果不是需要从该查询字符的下一个开始查
+                        n=n-i;
+                    }
+                    i = 0;
                     tempList = maskWord.getList();
                     continue;
                 }
@@ -145,7 +147,7 @@ public class SensitiveUtil {
         return false;
     }
 
-    public static MaskWord find(char c,List<MaskWord> tempList){
+    public static MaskWord find(char c,List<MaskWord> tempList){        //二分
         int min = 0;
         int max = tempList.size();
         if(max != 0){
