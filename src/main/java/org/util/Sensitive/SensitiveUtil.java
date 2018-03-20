@@ -17,7 +17,6 @@ public class SensitiveUtil {
     private static char startNumber = "\u0030".charAt(0);
     private static char endNumber = "\u0039".charAt(0);
     private static List<MaskWord> maskWords = new ArrayList<>();
-    private static List<MaskWord> oneWord = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
         long startTime = System.nanoTime();
@@ -41,7 +40,7 @@ public class SensitiveUtil {
             char[] chars = content.toCharArray();
             byte[] bytes = content.getBytes();
             boolean flag;
-            if (bytes.length <= 18 && bytes.length >= 1) {
+            if (bytes.length > 0) {
                 List<MaskWord> tempList = maskWords;
                 int a = 0;
                 for(char c : chars){
@@ -57,30 +56,6 @@ public class SensitiveUtil {
                         maskWord.setStop(true);
                     }
                     maskWord.setList(new ArrayList<MaskWord>());
-//                if(chars.length == 1 && isChinese(c)){
-//                    if (oneWord.size() == 0) {
-//                        oneWord.add(maskWord);
-//                    }else if(oneWord.size() == 1){
-//                        if(c > oneWord.get(0).getValue()){
-//                            oneWord.add(maskWord);
-//                        } else {
-//                            oneWord.add(0,maskWord);
-//                        }
-//                    }else {
-//                        if (c < oneWord.get(0).getValue()) {
-//                            oneWord.add(0, maskWord);
-//                        } else if (c > oneWord.get(oneWord.size() - 1).getValue()) {
-//                            oneWord.add(maskWord);
-//                        } else {
-//                            for (int i = 0; i < oneWord.size() - 1; i++) {
-//                                if (c > oneWord.get(i).getValue() && c < oneWord.get(i + 1).getValue()) {
-//                                    oneWord.add(i + 1, maskWord);
-//                                    break;
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
                     for (MaskWord m : tempList) {
                         if (c == m.getValue()) {
                             tempList = m.getList();
@@ -148,33 +123,21 @@ public class SensitiveUtil {
         //s = format(s);
         char[] chars = s.toCharArray();
         byte[] bytes = s.getBytes();
-        if (bytes.length > 18|| bytes.length < 1) {
+        if (bytes.length < 1) {
             return true;
         }
-//        for (char c : chars) {
-//            if(isChinese(c)){
-//                if(find(c,oneWord)!=null){
-//                    return true;
-//                }
-//            }
-//        }
-        if (chars.length > 1) {
+        if (chars.length > 0) {
             List<MaskWord> tempList = maskWords;
-            int i = 0;
             for (int n = 0; n < chars.length; n++) {
                 MaskWord maskWord = find(chars[n],tempList);
-                if (maskWord != null) {
-                    tempList = maskWord.getList();
-                    i++;
-                    if((i > 1 && maskWord.isStop())){
-                        return true;
-                    }
-                } else {
-                    if (i > 0) {
-                        n=n-i;
-                    }
-                    i = 0;
+                if(maskWord == null){
                     tempList = maskWords;
+                    continue;
+                }
+                if(maskWord.isStop()){
+                    return true;
+                } else {
+                    tempList = maskWord.getList();
                     continue;
                 }
             }
